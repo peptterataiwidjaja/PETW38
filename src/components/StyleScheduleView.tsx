@@ -30,6 +30,7 @@ interface StyleScheduleViewProps {
   onEdit: (record: StyleScheduleRecord) => void;
   onDelete: (id: string) => void;
   onOpenPushModal: () => void;
+  canInputData?: boolean;
 }
 
 export const StyleScheduleView: React.FC<StyleScheduleViewProps> = ({
@@ -40,7 +41,8 @@ export const StyleScheduleView: React.FC<StyleScheduleViewProps> = ({
   onAddNew,
   onEdit,
   onDelete,
-  onOpenPushModal
+  onOpenPushModal,
+  canInputData = true
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'calendar' | 'table'>('calendar');
   const [searchQuery, setSearchQuery] = useState('');

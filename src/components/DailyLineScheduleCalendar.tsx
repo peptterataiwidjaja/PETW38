@@ -25,13 +25,15 @@ interface DailyLineScheduleCalendarProps {
   conflicts: ScheduleOverlapConflict[];
   onSelectSchedule?: (schedule: StyleScheduleRecord) => void;
   onAddNewSchedule?: (lineId?: number) => void;
+  canInputData?: boolean;
 }
 
 export const DailyLineScheduleCalendar: React.FC<DailyLineScheduleCalendarProps> = ({
   schedules,
   conflicts,
   onSelectSchedule,
-  onAddNewSchedule
+  onAddNewSchedule,
+  canInputData = true
 }) => {
   // Filter state
   const [selectedMonth, setSelectedMonth] = useState<number>(8); // 8 = September (0-indexed)
@@ -62,6 +64,11 @@ export const DailyLineScheduleCalendar: React.FC<DailyLineScheduleCalendarProps>
   const isSunday = (day: number) => {
     const d = new Date(selectedYear, selectedMonth, day);
     return d.getDay() === 0;
+  };
+
+  const isSaturday = (day: number) => {
+    const d = new Date(selectedYear, selectedMonth, day);
+    return d.getDay() === 6;
   };
 
   const formatDate = (day: number): string => {
@@ -184,8 +191,8 @@ export const DailyLineScheduleCalendar: React.FC<DailyLineScheduleCalendarProps>
               </button>
             </div>
 
-            {/* Quick Action Button */}
-            {onAddNewSchedule && (
+            {/* Quick Action Button - Gated for PE only */}
+            {canInputData && onAddNewSchedule && (
               <button
                 onClick={() => onAddNewSchedule()}
                 className="px-3 py-1.5 bg-[#1a3478] hover:bg-blue-900 text-white rounded-lg font-bold shadow-2xs transition-colors"
@@ -200,28 +207,33 @@ export const DailyLineScheduleCalendar: React.FC<DailyLineScheduleCalendarProps>
         {/* Legend Ribbon */}
         <div className="mt-3 pt-3 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="font-bold text-slate-700 text-[11px] uppercase tracking-wider">Keterangan:</span>
+            <span className="font-bold text-slate-700 text-[11px] uppercase tracking-wider">Keterangan Kalender:</span>
             
             <div className="flex items-center space-x-1.5">
               <span className="w-3 h-3 rounded-xs bg-blue-600 border border-blue-700"></span>
-              <span className="text-slate-600 font-medium">Shift Reguler (08:00 - 17:00)</span>
+              <span className="text-slate-600 font-medium">Senin - Jumat (Normal 7-8 Jam)</span>
+            </div>
+
+            <div className="flex items-center space-x-1.5">
+              <span className="w-3 h-3 rounded-xs bg-amber-400 border border-amber-500"></span>
+              <span className="text-amber-900 font-bold">Sabtu (Masuk 1/2 Hari)</span>
+            </div>
+
+            <div className="flex items-center space-x-1.5">
+              <span className="w-3 h-3 rounded-xs bg-red-100 border border-red-300"></span>
+              <span className="text-red-700 font-bold">Minggu (Libur)</span>
             </div>
 
             <div className="flex items-center space-x-1.5">
               <span className="w-3 h-3 rounded-xs bg-amber-500 border border-amber-600"></span>
-              <span className="text-slate-600 font-medium">Lembur / OT (Sisa Produksi)</span>
+              <span className="text-slate-600 font-medium">Lembur / OT</span>
             </div>
 
             <div className="flex items-center space-x-1.5">
               <span className="w-3 h-3 rounded-xs bg-red-600 border border-red-700 flex items-center justify-center text-white text-[8px] font-black">
                 ⚡
               </span>
-              <span className="text-red-700 font-extrabold">Tumpang Tindih (Reguler + OT Bersamaan)</span>
-            </div>
-
-            <div className="flex items-center space-x-1.5">
-              <span className="w-3 h-3 rounded-xs bg-slate-200 border border-slate-300"></span>
-              <span className="text-slate-400 font-medium">Minggu / Libur</span>
+              <span className="text-red-700 font-extrabold">Tumpang Tindih (Overlap)</span>
             </div>
           </div>
 
@@ -258,15 +270,32 @@ export const DailyLineScheduleCalendar: React.FC<DailyLineScheduleCalendarProps>
               {dayNumbers.map((day) => {
                 const dayName = getDayName(day);
                 const isSun = isSunday(day);
+                const isSat = isSaturday(day);
                 return (
                   <div
                     key={day}
-                    className={`py-2 px-1 border-r border-slate-200 text-[10px] font-bold ${
-                      isSun ? 'bg-red-50 text-red-700' : 'text-slate-700'
+                    className={`py-1.5 px-0.5 border-r border-slate-200 text-[10px] font-bold ${
+                      isSun 
+                        ? 'bg-red-50/90 text-red-700' 
+                        : isSat 
+                          ? 'bg-amber-50/90 text-amber-800' 
+                          : 'text-slate-700'
                     }`}
                   >
-                    <div className="text-[9px] text-slate-400 uppercase tracking-tighter">{dayName}</div>
+                    <div className="text-[8.5px] uppercase tracking-tighter">
+                      {dayName}
+                    </div>
                     <div className="text-xs font-black">{day}</div>
+                    {isSun && (
+                      <span className="inline-block text-[7.5px] font-extrabold text-red-600 bg-red-100 px-1 rounded-xs">
+                        LIBUR
+                      </span>
+                    )}
+                    {isSat && (
+                      <span className="inline-block text-[7.5px] font-extrabold text-amber-700 bg-amber-100 px-1 rounded-xs">
+                        1/2 HARI
+                      </span>
+                    )}
                   </div>
                 );
               })}
@@ -314,6 +343,7 @@ export const DailyLineScheduleCalendar: React.FC<DailyLineScheduleCalendarProps>
                     {dayNumbers.map((day) => {
                       const dateStr = formatDate(day);
                       const isSun = isSunday(day);
+                      const isSat = isSaturday(day);
                       const { regularStyles, otStyles, dayConflicts, isOverlap } = getLineDayContent(lineId, dateStr);
 
                       const hasRegular = regularStyles.length > 0;
@@ -323,7 +353,7 @@ export const DailyLineScheduleCalendar: React.FC<DailyLineScheduleCalendarProps>
                         <div
                           key={day}
                           onClick={() => {
-                            if (hasRegular || hasOt || isOverlap) {
+                            if (hasRegular || hasOt || isOverlap || isSun || isSat) {
                               setActiveCellDetail({
                                 dateStr,
                                 lineId,
@@ -335,7 +365,11 @@ export const DailyLineScheduleCalendar: React.FC<DailyLineScheduleCalendarProps>
                             }
                           }}
                           className={`min-h-[58px] p-0.5 border-r border-slate-200 relative flex flex-col justify-center gap-0.5 cursor-pointer transition-all ${
-                            isSun ? 'bg-slate-100/70' : 'hover:bg-blue-100/30'
+                            isSun 
+                              ? 'bg-slate-100/90 hover:bg-red-50/50' 
+                              : isSat 
+                                ? 'bg-amber-50/30 hover:bg-amber-100/40' 
+                                : 'hover:bg-blue-100/30'
                           } ${isOverlap ? 'bg-red-50/80 ring-1 ring-inset ring-red-400' : ''}`}
                         >
                           {/* OVERLAP DISPLAY: FLASHING COMBINED BAR */}
@@ -373,6 +407,18 @@ export const DailyLineScheduleCalendar: React.FC<DailyLineScheduleCalendarProps>
                                   <Clock className="w-2 h-2 text-white shrink-0" />
                                   <span className="truncate">OT: {otStyles[0].remainingQty}p</span>
                                 </div>
+                              )}
+
+                              {/* Empty day label for Sunday / Saturday */}
+                              {!hasRegular && !hasOt && isSun && (
+                                <span className="text-[7.5px] font-bold text-slate-400 text-center select-none">
+                                  LIBUR
+                                </span>
+                              )}
+                              {!hasRegular && !hasOt && isSat && (
+                                <span className="text-[7.5px] font-bold text-amber-600/70 text-center select-none">
+                                  1/2 HARI
+                                </span>
                               )}
                             </>
                           )}
@@ -506,6 +552,20 @@ export const DailyLineScheduleCalendar: React.FC<DailyLineScheduleCalendarProps>
                 ✕
               </button>
             </div>
+
+            {/* Sunday / Saturday Status Banner */}
+            {new Date(activeCellDetail.dateStr).getDay() === 0 && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800 font-bold flex items-center space-x-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse shrink-0"></span>
+                <span>HARI MINGGU: Libur Operasional Pabrik (0 Jam Kerja Reguler)</span>
+              </div>
+            )}
+            {new Date(activeCellDetail.dateStr).getDay() === 6 && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-bold flex items-center space-x-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
+                <span>HARI SABTU: Masuk Setengah Hari (08:00 - 12:00 / 4 Jam Kerja Reguler)</span>
+              </div>
+            )}
 
             {/* Overlap Alert Header if detected */}
             {activeCellDetail.conflicts.length > 0 && (

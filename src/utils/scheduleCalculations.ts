@@ -11,19 +11,58 @@ export function formatDateYMD(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-// Tambah hari kerja (melewati hari Minggu jika pabrik libur hari Minggu)
-export function addWorkingDays(startDateStr: string, daysToAdd: number, skipSunday: boolean = true): string {
+/**
+ * Cek apakah tanggal adalah hari Minggu (Pabrik Libur)
+ */
+export function isSundayDate(date: Date | string): boolean {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return d.getDay() === 0;
+}
+
+/**
+ * Cek apakah tanggal adalah hari Sabtu (Masuk Setengah Hari)
+ */
+export function isSaturdayDate(date: Date | string): boolean {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return d.getDay() === 6;
+}
+
+/**
+ * Mendapatkan jam kerja standar hari:
+ * - Minggu = 0 jam (Libur)
+ * - Sabtu = setengah hari (standardHours / 2, e.g. 4 jam)
+ * - Senin - Jumat = standardHours (e.g. 8 jam)
+ */
+export function getStandardWorkingHoursForDate(date: Date | string, standardHours: number = 8): number {
+  if (isSundayDate(date)) return 0;
+  if (isSaturdayDate(date)) return Math.max(1, Math.round(standardHours / 2));
+  return standardHours;
+}
+
+/**
+ * Tambah hari kerja pada kalender:
+ * - Setiap hari Minggu: LIBUR (0 hari kerja)
+ * - Setiap hari Sabtu: MASUK SETENGAH HARI (0.5 hari kerja)
+ * - Senin s/d Jumat: 1.0 hari kerja normal
+ */
+export function addWorkingDays(startDateStr: string, daysToAdd: number): string {
   if (daysToAdd <= 0) return startDateStr;
   const curr = new Date(startDateStr);
-  let added = 0;
+  let accumulated = 0;
   
-  while (added < daysToAdd) {
+  while (accumulated < daysToAdd) {
     curr.setDate(curr.getDate() + 1);
-    // 0 = Sunday
-    if (skipSunday && curr.getDay() === 0) {
+    const dayOfWeek = curr.getDay();
+    if (dayOfWeek === 0) {
+      // Minggu = Libur
       continue;
+    } else if (dayOfWeek === 6) {
+      // Sabtu = Masuk Setengah Hari (0.5 hari)
+      accumulated += 0.5;
+    } else {
+      // Senin - Jumat = 1.0 hari kerja penuh
+      accumulated += 1.0;
     }
-    added++;
   }
   return formatDateYMD(curr);
 }

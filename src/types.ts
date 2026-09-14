@@ -66,6 +66,7 @@ export interface MonthlyProductivityRecord {
   efficiencyPercent: number; // Efisiensi %
   productivityPcsPerOp: number; // Output per operator (pcs/op)
   defectPercent: number; // Tingkat reject / defect %
+  cmRate?: number; // Tarif CM per pcs mengikuti data style
   analysisStatus: 'optimal' | 'warning' | 'critical'; // Status Evaluasi Analisis
   analysisNote: string; // Kolom Analisis Produksi & Bottleneck
   note?: string; // Catatan operasional opsional
@@ -273,5 +274,24 @@ export interface RepairDefectRecord {
   notes?: string;
   updatedAt?: string;
 }
+
+// Keamanan & Akses Akun Pengguna
+export type UserRole = 'PE' | 'MONITOR';
+
+export interface AuthUser {
+  id: string;
+  username: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  roleTitle: string;
+  department: string;
+  canInputData: boolean; // Akun PE = true, Akun Monitor = false
+  canPrintPdf: boolean;  // Akun PE = true, Akun Monitor = false
+  canEditDelete: boolean;// Akun PE = true, Akun Monitor = false
+  canBackupRestore: boolean; // Akun PE = true, Akun Monitor = false (bisa ekspor saja)
+  lastLogin?: string;
+}
+
 
 

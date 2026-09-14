@@ -10,6 +10,10 @@ interface RevenueTableProps {
 }
 
 export const RevenueTable: React.FC<RevenueTableProps> = ({ lines, summary, selectedMonth }) => {
+  const avgCmRate = lines.length > 0
+    ? Math.round(lines.reduce((acc, l) => acc + (l.cmRate || 0), 0) / lines.length)
+    : 37000;
+
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       {/* Table Header Info */}
@@ -18,16 +22,16 @@ export const RevenueTable: React.FC<RevenueTableProps> = ({ lines, summary, sele
           <div className="flex items-center space-x-2">
             <DollarSign className="w-5 h-5 text-blue-600" />
             <h3 className="text-base font-bold text-slate-900">
-              Kinerja Revenue & Style Produksi
+              Kinerja Revenue &amp; Tarif CM per Style
             </h3>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Perbandingan realisasi revenue terhadap target anggaran periode {selectedMonth ? formatMonthYearIndonesian(selectedMonth) : 'berjalan'}
+            Perhitungan revenue riil mengikuti tarif CM per pcs dari masing-masing style periode {selectedMonth ? formatMonthYearIndonesian(selectedMonth) : 'berjalan'}
           </p>
         </div>
         <div className="flex items-center space-x-2 text-xs">
-          <span className="px-2.5 py-1 bg-blue-50 text-blue-700 font-semibold rounded-md border border-blue-200">
-            CM Rate Rata-rata: Rp 37.000
+          <span className="px-2.5 py-1 bg-blue-50 text-blue-800 font-semibold rounded-md border border-blue-200" title="Rata-rata tarif CM terhitung dari style aktif">
+            Tarif CM Style: Rp {avgCmRate.toLocaleString('id-ID')} (Rata-rata)
           </span>
         </div>
       </div>

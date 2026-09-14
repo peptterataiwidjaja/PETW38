@@ -35,14 +35,25 @@ export function buildLinesFromMonthlyRecap(
     const lineName = recs[0]?.lineName || `Line ${lineId}`;
     const latestStyle = recs[recs.length - 1]?.style || 'Unknown Style';
 
-    // Cari CM Rate dari Bank Data atau gunakan standar industri
-    const matchedBank = bankModels.find(
-      bm => bm.modelCode.toLowerCase() === latestStyle.toLowerCase() || bm.id === recs[0]?.modelId
-    );
-    const cmRate = matchedBank?.cmRate || 37000;
+    // Helper untuk mencari CM Rate spesifik berdasarkan style data
+    const getCmRateForStyle = (styleName: string, modelId?: string, explicitCmRate?: number): number => {
+      if (explicitCmRate && explicitCmRate > 0) return explicitCmRate;
+      const clean = styleName.trim().toLowerCase();
+      const matchedBank = bankModels.find(
+        bm => bm.modelCode.trim().toLowerCase() === clean ||
+              clean.includes(bm.modelCode.trim().toLowerCase()) ||
+              (modelId && bm.id === modelId)
+      );
+      return matchedBank?.cmRate || 37000;
+    };
+
+    // CM Rate untuk style utama lini ini
+    const cmRate = getCmRateForStyle(latestStyle, recs[recs.length - 1]?.modelId, recs[recs.length - 1]?.cmRate);
 
     let sumTargetPcs = 0;
     let sumActualPcs = 0;
+    let sumActualRevenue = 0;
+    let sumTargetRevenue = 0;
 
     // Buat matriks harian untuk setiap tanggal dalam bulan ini
     const daily: DailyRecord[] = [];
@@ -54,6 +65,11 @@ export function buildLinesFromMonthlyRecap(
       if (rec) {
         sumTargetPcs += rec.targetDailyPcs || 0;
         sumActualPcs += rec.actualDailyPcs || 0;
+
+        // Analisis revenue dan tarif CM mengikuti data style pada tanggal tersebut
+        const itemCmRate = getCmRateForStyle(rec.style || latestStyle, rec.modelId, rec.cmRate);
+        sumActualRevenue += (rec.actualDailyPcs || 0) * itemCmRate;
+        sumTargetRevenue += (rec.targetDailyPcs || 0) * itemCmRate;
 
         // Hitung aktual SMV dari menit kerja riil dibagi jumlah output riil
         const totalMinutes = (rec.manpower || 40) * (rec.workingHours || 8) * 60;
@@ -79,8 +95,8 @@ export function buildLinesFromMonthlyRecap(
       }
     }
 
-    const actualRevenue = sumActualPcs * cmRate;
-    const targetRevenue = sumTargetPcs * cmRate;
+    const actualRevenue = sumActualRevenue > 0 ? sumActualRevenue : sumActualPcs * cmRate;
+    const targetRevenue = sumTargetRevenue > 0 ? sumTargetRevenue : sumTargetPcs * cmRate;
     const varianceRevenue = actualRevenue - targetRevenue;
     const variancePercent = targetRevenue > 0 ? (varianceRevenue / targetRevenue) * 100 : 0;
     const overallAchievement = sumTargetPcs > 0 
